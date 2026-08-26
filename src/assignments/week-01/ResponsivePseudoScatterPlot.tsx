@@ -9,46 +9,70 @@ interface DataPoint {
 }
 
 const data: DataPoint[] = [
-  { x: 132, y: 391 },
-  { x: 330, y: 349 },
-  { x: 410, y: 192 },
-  { x: 527, y: 257 },
-  { x: 688, y: 119 },
-  { x: 878, y: 55 },
+  { x: 100, y: 100 },
+  { x: 250, y: 300 },
+  { x: 400, y: 200 },
+  { x: 550, y: 350 },
+  { x: 700, y: 150 },
+  { x: 850, y: 280 },
 ];
 
 const ORIGINAL_WIDTH = 960;
 const ORIGINAL_HEIGHT = 500;
-const RADIUS = 34;
 
 export function ResponsivePseudoScatterPlot() {
   const svgRef = useRef<SVGSVGElement>(null);
+
   const { ref: divRef, dimensions } = useDimensions();
 
   useEffect(() => {
     const svg = svgRef.current;
-    if (!svg || dimensions.width === 0 || dimensions.height === 0) return;
 
-    const xScale = scaleLinear().domain([0, ORIGINAL_WIDTH]).range([0, dimensions.width]);
+    if (
+      !svg ||
+      dimensions.width === 0 ||
+      dimensions.height === 0
+    ) {
+      return;
+    }
 
-    const yScale = scaleLinear().domain([0, ORIGINAL_HEIGHT]).range([0, dimensions.height]);
+    const xScale = scaleLinear()
+      .domain([0, ORIGINAL_WIDTH])
+      .range([0, dimensions.width]);
+
+    const yScale = scaleLinear()
+      .domain([0, ORIGINAL_HEIGHT])
+      .range([0, dimensions.height]);
 
     select(svg)
-      .selectAll('circle')
+      .selectAll('path')
       .data(data)
-      .join('circle')
-      .attr('cx', (d: DataPoint) => xScale(d.x))
-      .attr('cy', (d: DataPoint) => yScale(d.y))
-      .attr('r', RADIUS);
+      .join('path')
+
+      // Creates a triangle instead of a circle
+      .attr('d', 'M 0 -20 L 18 15 L -18 15 Z')
+
+      // Positions each triangle
+      .attr(
+        'transform',
+        (d) =>
+          `translate(${xScale(d.x)}, ${yScale(d.y)})`,
+      )
+
+      // Small creative change
+      .attr('fill', 'purple');
   }, [dimensions]);
 
   return (
-    <div ref={divRef} className="relative w-full h-full">
+    <div
+      ref={divRef}
+      className="relative w-full h-full"
+    >
       <svg
         ref={svgRef}
         className="absolute inset-0 w-full h-full"
         role="img"
-        aria-label="Responsive scatter plot showing 6 data points"
+        aria-label="Responsive pseudo scatter plot using triangles"
       ></svg>
     </div>
   );
