@@ -18,3 +18,25 @@ Sketch 2: Stacked Bar by Age Four bars, one per age group (18-24, 35-44, 55-64, 
 Sketch 3: Small Multiples Grid Four small bar-chart panels, each representing a different demographic slice (low income, mid income, no degree, has degree). Each mini-chart shows the same three categories so they can be compared side by side, making it easy to see which factor, income or education, has a bigger effect on banking status.
 
 Sketch 4: Access Method Flow Boxes for "Teller," "ATM," "Online," and "Mobile," with arrows showing how people might move between account access methods. The idea is to visualize a shift over time or across groups: for example, older users concentrated near Teller/ATM, younger users near Online/Mobile.
+
+
+
+
+## Task Analysis
+
+**Who this is for:** people trying to understand financial inclusion in America, policymakers, researchers, financial literacy advocates, or curious members of the public wondering how evenly the shift to digital payments is playing out.
+
+**High-level goal:** understand who is being left behind as banking and payments become more digital, and why.
+
+### Tasks
+
+- **Compare** banking status (unbanked, underbanked, fully banked) across different population segments, such as age groups, income brackets, and education levels, to see which factors are associated with the largest gaps.
+- **Identify** which demographic groups have the highest rates of exclusion from mainstream banking, so that attention or resources could be targeted appropriately.
+- **Rank** demographic segments (for example, age brackets or income brackets) by their unbanked or underbanked rate, to surface the groups furthest from full financial inclusion.
+- **Correlate** a household's primary method of accessing their bank account (teller, ATM, phone, online, mobile app) with their demographic profile, to understand whether older or lower-income households are systematically relying on less convenient or less modern access methods.
+- **Locate** any geographic concentration of unbanked or underbanked households, to determine whether financial exclusion is a nationwide pattern or concentrated in particular states or regions.
+- **Summarize** the overall shape of the population: what proportion of households fall into each banking status category, and what the general demographic makeup looks like.
+- **Browse/Explore** the dataset at the level of individual demographic combinations (for example, low income and no degree vs. high income and a degree), to generate hypotheses about which combinations of factors compound financial exclusion.
+- **Determine associations** between housing tenure (owning vs. renting) or employment status and banking access, to understand whether financial exclusion is tied to broader economic stability.
+
+These tasks are independent of any particular chart type. For instance, the "compare across demographic groups" task could be satisfied by a small multiples grid, a grouped bar chart, or a stacked bar chart; the "locate geographic concentration" task could be satisfied by a choropleth map or a ranked list of states. The sketches from last week represent early, chart-type-specific explorations of how some of these tasks might be visually addressed; the final design should be chosen based on which chart types best serve the tasks above, not the other way around.
