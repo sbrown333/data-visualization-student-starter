@@ -40,3 +40,28 @@ Sketch 4: Access Method Flow Boxes for "Teller," "ATM," "Online," and "Mobile," 
 - **Determine associations** between housing tenure (owning vs. renting) or employment status and banking access, to understand whether financial exclusion is tied to broader economic stability.
 
 These tasks are independent of any particular chart type. For instance, the "compare across demographic groups" task could be satisfied by a small multiples grid, a grouped bar chart, or a stacked bar chart; the "locate geographic concentration" task could be satisfied by a choropleth map or a ranked list of states. The sketches from last week represent early, chart-type-specific explorations of how some of these tasks might be visually addressed; the final design should be chosen based on which chart types best serve the tasks above, not the other way around.
+
+
+
+
+
+Validation
+Applying the four levels of the Nested Model (Munzner, Ch. 4) to this project, using an imagined ideal user: a researcher or financial literacy advocate at a nonprofit or government agency who wants to understand and communicate which populations are being left behind as banking and payments go digital.
+
+Domain Situation
+Claim: Financial literacy advocates and policymakers currently rely on static PDF reports (like the FDIC's own survey report) to understand unbanked/underbanked trends, and lack an easy way to explore how banking status varies across intersecting demographic factors (age, income, education, employment) on their own.
+Validation approach: Ideally, this would be validated by observing and interviewing target users, watching how a financial literacy advocate currently digs through FDIC PDF reports or spreadsheets to answer questions like "which age group needs outreach most," and noting where that process breaks down. Since there is no real user for this class project, this is a hypothesized domain situation based on the fact that the source data itself is only published as static tables and PDF reports, with no interactive exploration tool aside from the Boston Fed's more limited state-level map.
+
+Data/Task Abstraction
+Claim: The right data abstraction is the household-level survey sample already assembled (demographics + banking status + access method), and the right task abstraction is the set of tasks written up in the Task Analysis section above: compare, identify, rank, correlate, locate, summarize, and browse/explore.
+Validation approach: This is validated by checking that the tasks were derived independently of any chart type (as required by the Task Analysis assignment) and that they trace back to the domain situation. In an ideal setting, this abstraction would be validated by walking through the task list with a real financial literacy advocate and confirming that these are actually the questions they'd want answered. Since that's not available here, the check is against the source material: every task maps to a question genuinely raised in the FDIC's own published analysis (age, income, education, and geography are exactly the breakdowns the FDIC itself reports on), which is a weaker but still meaningful proxy for domain validity.
+
+Visual Encoding / Interaction Idiom
+Claim: A combination of small multiples, a stacked/grouped bar chart, and a simple map or ranked list will support the comparison, ranking, and geographic tasks better than a single, dense chart trying to show everything at once.
+Validation approach: The correct method here is to justify the design with respect to alternatives, which is exactly why last week's sketches explored four different idiom options (map, stacked bar, small multiples, flow diagram) instead of committing to one immediately. Going forward, this would ideally also involve informal usability testing: showing a working prototype to a few people and watching whether they can complete a task like "find which age group has the highest unbanked rate" without guidance. A computational benchmark showing the chart renders quickly would NOT be sufficient evidence here, per the "avoid mismatches" principle. Fast rendering validates the algorithm, not whether the encoding communicates the right thing.
+
+Algorithm
+Claim: The dataset (10,000 rows, 15 columns, under 2MB) can be loaded, parsed, and rendered in the browser with no noticeable lag, and any future filtering/interaction (such as selecting a demographic subgroup) should update the visualization in well under a second.
+Validation approach: This is validated by direct measurement (system time), the standard computer science method for the algorithm layer. In practice, this was already informally checked: the Week 2 and Week 3 implementations load and parse the CSV client-side without a visible delay, and a formal check going forward would time how long parsing and re-rendering take as interactive filters are added, to make sure the experience stays responsive as the project grows more interactive.
+
+
