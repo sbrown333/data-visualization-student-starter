@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { select } from 'd3-selection';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { max } from 'd3-array';
@@ -46,10 +46,12 @@ function BarChart({
   data,
   total,
   onHover,
+  highlighted,
 }: {
   data: { status: string; count: number }[];
   total: number;
   onHover: (t: TooltipState | null) => void;
+  highlighted: string | null;
 }) {
   const ref = useRef<SVGSVGElement | null>(null);
   const width = 620;
@@ -64,6 +66,18 @@ function BarChart({
 
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
+
+    if (data.length === 0) {
+      svgSel
+        .append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', 14)
+        .attr('fill', '#9ca3af')
+        .text('No categories selected — click a legend item to show it again.');
+      return;
+    }
 
     const x = scaleBand()
       .domain(data.map((d) => d.status))
@@ -163,7 +177,7 @@ function BarChart({
       .attr('width', x.bandwidth())
       .attr('height', (d) => innerHeight - y(d.count))
       .attr('fill', (d) => STATUS_COLORS[d.status] ?? '#6b7280')
-      .attr('stroke', 'transparent')
+      .attr('stroke', (d) => (d.status === highlighted ? '#111827' : 'transparent'))
       .attr('stroke-width', 3)
       .style('cursor', 'pointer')
       .on('mouseenter', function (event, d) {
@@ -175,8 +189,8 @@ function BarChart({
         const rect = svg.getBoundingClientRect();
         onHover({ status: d.status, count: d.count, x: event.clientX - rect.left, y: event.clientY - rect.top });
       })
-      .on('mouseleave', function () {
-        select(this).attr('stroke', 'transparent');
+      .on('mouseleave', function (_event, d) {
+        select(this).attr('stroke', d.status === highlighted ? '#111827' : 'transparent');
         onHover(null);
       });
 
@@ -206,7 +220,7 @@ function BarChart({
       .attr('fill', '#6b7280')
       .attr('pointer-events', 'none')
       .text((d) => `${((100 * d.count) / total).toFixed(1)}%`);
-  }, [data, total]);
+  }, [data, total, highlighted]);
 
   return <svg ref={ref} width={width} height={height} />;
 }
@@ -215,6 +229,8 @@ export function InteractiveVisual() {
   const [rows, setRows] = useState<HouseholdRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set(STATUS_ORDER));
+  const [legendHover, setLegendHover] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(DATA_URL)
@@ -226,6 +242,14 @@ export function InteractiveVisual() {
       .catch((err) => setError(String(err)));
   }, []);
 
+  const allCounts = useMemo(() => {
+    if (!rows) return [];
+    return STATUS_ORDER.map((status) => ({
+      status,
+      count: rows.filter((r) => r.banking_status === status).length,
+    }));
+  }, [rows]);
+
   if (error) {
     return <div className="p-6 text-red-600">Error loading data: {error}</div>;
   }
@@ -234,20 +258,63 @@ export function InteractiveVisual() {
     return <div className="p-6 text-gray-500">Loading dataset...</div>;
   }
 
-  const counts = STATUS_ORDER.map((status) => ({
-    status,
-    count: rows.filter((r) => r.banking_status === status).length,
-  }));
+  const visibleCounts = allCounts.filter((d) => activeStatuses.has(d.status));
+  const visibleTotal = visibleCounts.reduce((sum, d) => sum + d.count, 0);
+
+  function toggleStatus(status: string) {
+    setActiveStatuses((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+    setTooltip(null);
+  }
+
+  const hoveredForBars = tooltip?.status ?? legendHover;
 
   return (
     <div className="p-6 max-w-3xl w-full overflow-y-auto h-full">
-      <h1 className="text-2xl font-bold mb-1">Interaction: Hover for Definitions</h1>
-      <p className="text-gray-600 mb-6">
-        Same chart as Week 4, now with a hover interaction: mousing over a bar highlights it and shows a tooltip
-        explaining what that banking status category actually means.
+      <h1 className="text-2xl font-bold mb-1">Interaction: Tooltip + Interactive Legend</h1>
+      <p className="text-gray-600 mb-4">
+        Same underlying chart as Week 4, now with two interactions: hover a bar for a definition, count, and
+        percentage, and click a legend swatch below to show or hide that category (the chart rescales to whatever
+        is still visible). Hovering a legend item also highlights its bar.
       </p>
+
+      <div className="flex flex-wrap gap-3 mb-4" role="group" aria-label="Toggle banking status categories">
+        {STATUS_ORDER.map((status) => {
+          const active = activeStatuses.has(status);
+          return (
+            <button
+              key={status}
+              type="button"
+              onClick={() => toggleStatus(status)}
+              onMouseEnter={() => setLegendHover(status)}
+              onMouseLeave={() => setLegendHover(null)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-opacity"
+              style={{
+                borderColor: STATUS_COLORS[status],
+                opacity: active ? 1 : 0.4,
+                backgroundColor: active ? `${STATUS_COLORS[status]}15` : 'transparent',
+              }}
+              aria-pressed={active}
+            >
+              <span
+                className="inline-block w-3 h-3 rounded-full"
+                style={{ backgroundColor: STATUS_COLORS[status] }}
+              />
+              <span className="text-gray-800">{status}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="relative inline-block">
-        <BarChart data={counts} total={rows.length} onHover={setTooltip} />
+        <BarChart data={visibleCounts} total={visibleTotal} onHover={setTooltip} highlighted={hoveredForBars} />
         {tooltip && (
           <div
             className="absolute pointer-events-none bg-gray-900 text-white text-sm rounded px-3 py-2 shadow-lg max-w-xs"
