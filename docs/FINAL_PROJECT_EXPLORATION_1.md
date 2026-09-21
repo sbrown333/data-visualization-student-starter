@@ -65,3 +65,41 @@ Claim: The dataset (10,000 rows, 15 columns, under 2MB) can be loaded, parsed, a
 Validation approach: This is validated by direct measurement (system time), the standard computer science method for the algorithm layer. In practice, this was already informally checked: the Week 2 and Week 3 implementations load and parse the CSV client-side without a visible delay, and a formal check going forward would time how long parsing and re-rendering take as interactive filters are added, to make sure the experience stays responsive as the project grows more interactive.
 
 
+
+
+## Progress Since Initial Proposal
+
+Since the original proposal, the project has moved from sketches to a working, iteratively improved chart built on the real FDIC dataset:
+
+- **Week 2** loaded and summarized the trimmed 10,000-household sample, confirming the dataset was usable end to end in the browser.
+- **Week 3** produced a first real visual: a bar chart of banking status counts across the full sample.
+- **Week 4** focused on legibility: added a title, subtitle, axis labels, gridlines, and value/percent labels so the chart could stand on its own without explanation.
+- **Week 5** added two forms of interaction: hovering a bar now shows a tooltip defining that banking status category with its count and percentage, and a clickable color legend lets a viewer show or hide categories, with the chart rescaling to whatever is visible.
+
+<img width="1200" alt="Week 2 summary" src="https://github.com/user-attachments/assets/ae6be5bf-7c1e-4c2c-9603-02f5dc1e0518">
+
+<img width="1200" alt="Week 3 first visual" src="https://github.com/user-attachments/assets/8a57919e-2c6b-42a6-96aa-1f3be9bce7d7">
+
+<img width="1200" alt="Week 4 legibility pass" src="https://github.com/user-attachments/assets/dedc1a63-a86e-458c-aa04-de2c801acb0f">
+
+<img width="1200" alt="Week 5 interaction" src="https://github.com/user-attachments/assets/98c81313-cb2d-433b-bf28-8e9778dd7334">
+
+This progression validates the "Algorithm" claim from the Validation section: the dataset loads and re-renders with no noticeable lag, even as filtering and hover interaction were added on top of the base chart.
+
+## North Star Sketch
+
+The sketches from Week 1 explored four separate chart-type ideas in isolation. This sketch imagines them combined into one interactive dashboard, the most ambitious version of this project I'd want to reach by the end of the course, even if the final build ends up covering only part of it.
+
+<img width="1400" alt="North star dashboard concept" src="https://github.com/user-attachments/assets/fc91e628-e048-42d9-81e3-7f3fcd6ea749">
+
+**The concept:** a single-page dashboard called *"Left Behind? Mapping America's Digital Payments Divide."* Five pieces work together instead of as separate charts:
+
+1. **A hex-grid state map** (left) where each state is sized and colored by its combined unbanked-plus-underbanked rate, replacing Sketch 1's rough circle-on-outline idea with something clickable.
+2. **A small-multiples row** (top right) comparing the same three-category breakdown across income, education, age, and employment side by side, directly extending Sketch 3.
+3. **A filter and legend panel** (right) where clicking a legend swatch or an age chip filters every other panel on the page at once, not just the one chart it's attached to.
+4. **An access-method flow diagram** (bottom of that panel), evolving Sketch 4's Teller-ATM-Online-Mobile boxes into something that would highlight the live-selected filter's path.
+5. **A trend line over time** (bottom), showing 2009-2023 survey years so a viewer can see not just where exclusion is concentrated today, but whether the gap between groups is closing or widening.
+
+The unifying idea, and the actual "north star," is that clicking anything (a state, a legend swatch, an age chip, a point on the timeline) refilters every other panel together, so one question, "who's still left behind, and by how much," can be answered from five angles without leaving the page.
+
+**Stretch idea:** if there's time, an AI-generated companion illustration (a more editorial, magazine-style visual rather than a dashboard mockup) could accompany the project as a cover image: a stylized scene contrasting a brightly-lit, connected digital neighborhood with a dimmer, disconnected one nearby, still linked by the same street, visually representing the "who's left behind" theme rather than the data itself.
