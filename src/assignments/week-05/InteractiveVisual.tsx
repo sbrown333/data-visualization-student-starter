@@ -24,9 +24,9 @@ function parseCSV(text: string): HouseholdRow[] {
 
 const STATUS_ORDER = ['Unbanked', 'Underbanked', 'Fully Banked'];
 const STATUS_COLORS: Record<string, string> = {
-  Unbanked: '#dc2626',
-  Underbanked: '#f59e0b',
-  'Fully Banked': '#16a34a',
+  Unbanked: '#d03b3b',
+  Underbanked: '#fab219',
+  'Fully Banked': '#0ca30c',
 };
 const STATUS_DEFINITIONS: Record<string, string> = {
   Unbanked: 'No checking or savings account at a bank or credit union.',
