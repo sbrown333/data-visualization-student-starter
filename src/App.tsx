@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { assignments, assignmentsMap, defaultAssignment } from './assignments';
+import { BankBackdrop } from './components/BankBackdrop';
 
 function App() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,7 +39,8 @@ function App() {
   }, [toggleSidebar]);
 
   return (
-    <div className="w-screen h-screen flex bg-white">
+    <div className="w-screen h-screen flex bg-white relative isolate">
+      <BankBackdrop />
       {/* Left Sidebar - Navigation */}
       {!hideSidebar && (
         <div className="w-[250px] border-r border-gray-300 p-4 overflow-y-auto">
