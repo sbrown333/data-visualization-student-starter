@@ -4,6 +4,7 @@ import { DigitalPaymentsSummary } from './week-02/DigitalPaymentsSummary';
 import { FirstVisual } from './week-03/FirstVisual';
 import { SecondPassVisual } from './week-04/SecondPassVisual';
 import { InteractiveVisual } from './week-05/InteractiveVisual';
+import { Week6 } from './week-06/Week6';
 
 export interface Assignment {
   id: string;
@@ -36,6 +37,11 @@ export const assignments: Assignment[] = [
     id: '5',
     name: 'Week 5',
     component: InteractiveVisual,
+  },
+  {
+    id: '6',
+    name: 'Week 6',
+    component: Week6,
   },
 ];
 
