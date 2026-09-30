@@ -103,3 +103,19 @@ The sketches from Week 1 explored four separate chart-type ideas in isolation. T
 The unifying idea, and the actual "north star," is that clicking anything (a state, a legend swatch, an age chip, a point on the timeline) refilters every other panel together, so one question, "who's still left behind, and by how much," can be answered from five angles without leaving the page.
 
 **Stretch idea:** if there's time, an AI-generated companion illustration (a more editorial, magazine-style visual rather than a dashboard mockup) could accompany the project as a cover image: a stylized scene contrasting a brightly-lit, connected digital neighborhood with a dimmer, disconnected one nearby, still linked by the same street, visually representing the "who's left behind" theme rather than the data itself.
+
+
+
+## Week 6 / Project V1
+
+Week 6 pulls together the three strongest idioms from the North Star sketch into a first real "V1" of the core concept: banking status, disaggregated across the demographic, employment/access, and geographic dimensions the Task Analysis called out.
+
+**Live:** [Week 6 — Project V1](https://sbrown333.github.io/data-visualization-student-starter/?example=6)
+
+Three views, chosen with a tab switcher rather than shown all at once (see peer feedback below):
+
+- **By Age, Income & Education** — small multiples of the banking-status breakdown, with a dimension toggle so only one demographic slice is on screen at a time, extending Sketch 3.
+- **By Employment Status & Access Method** — a heatmap crossing employment status with primary account-access method, extending Sketch 4's access-method focus.
+- **By State** — a live choropleth map of the U.S., colored by the selected banking status's rate per state, replacing Sketch 1's rough circle-on-outline idea with an actual interactive map.
+
+**Peer feedback incorporated:** a classmate (Chris) flagged that stacking every panel on one page risked overwhelming a first-time viewer. In response, Week 6 uses a tabbed layout so only one view renders at a time, and the three demographic bar charts (age/income/education) were combined into a single panel with a toggle rather than shown as three separate charts.
