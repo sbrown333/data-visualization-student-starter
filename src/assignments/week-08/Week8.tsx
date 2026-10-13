@@ -1,44 +1,40 @@
-import { useEffect, useState } from 'react';
-import { parseAudit } from './audit';
-import type { Audit } from './audit';
+import { useEffect, useMemo, useState } from 'react';
 import { HOUSEHOLDS_URL, parseHouseholds } from './households';
 import type { Households } from './households';
-import { AuditTab } from './AuditTab';
+import { ALL_KEYS, buildComponents, scoreAll } from './readiness';
+import { Pills } from './parts';
 import { Participation } from './Participation';
+import { Explorer } from './Explorer';
+import { Distributions } from './Distributions';
+import { StateTab } from './StateTab';
+import { ToolHeatmap } from './ToolHeatmap';
 
-const OLD_URL = `${import.meta.env.BASE_URL}data/digital-payments/banking_sample_10000.csv`;
-
-type Tab = 'audit' | 'participation';
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'audit', label: 'What was wrong' },
-  { key: 'participation', label: 'Digital participation' },
+// Week 8: the project on the rebuilt FDIC 2023 household file (29,483 households,
+// weighted). Same one-view-at-a-time tabs as Week 6. The readiness score
+// components are shared by every tab that uses the score.
+const TABS = [
+  { key: 'gap', label: 'Adoption gap' },
+  { key: 'explore', label: 'Readiness explorer' },
+  { key: 'spread', label: 'Distributions' },
+  { key: 'state', label: 'By state' },
+  { key: 'tools', label: 'Tool heatmap' },
 ];
 
-interface Loaded {
-  audit: Audit;
-  rebuilt: Households;
-}
-
 export function Week8() {
-  const [tab, setTab] = useState<Tab>('audit');
-  const [data, setData] = useState<Loaded | null>(null);
+  const [tab, setTab] = useState('gap');
+  const [data, setData] = useState<Households | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [active, setActive] = useState<ReadonlySet<string>>(new Set(ALL_KEYS));
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetch(OLD_URL).then((r) => {
-        if (!r.ok) throw new Error(`Could not load the old sample (${r.status}).`);
+    fetch(HOUSEHOLDS_URL)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Could not load the household data (${r.status}).`);
         return r.text();
-      }),
-      fetch(HOUSEHOLDS_URL).then((r) => {
-        if (!r.ok) throw new Error(`Could not load the rebuilt household file (${r.status}).`);
-        return r.text();
-      }),
-    ])
-      .then(([oldText, newText]) => {
-        if (cancelled) return;
-        setData({ audit: parseAudit(oldText), rebuilt: parseHouseholds(newText) });
+      })
+      .then((text) => {
+        if (!cancelled) setData(parseHouseholds(text));
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Something went wrong loading the data.');
@@ -48,34 +44,43 @@ export function Week8() {
     };
   }, []);
 
+  const comps = useMemo(() => (data ? buildComponents(data) : null), [data]);
+  const scores = useMemo(() => (data && comps ? scoreAll(data, comps, active) : null), [data, comps, active]);
+
+  const toggle = (k: string) =>
+    setActive((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next.size === 0 ? prev : next;
+    });
+
   return (
-    <div className="h-full overflow-y-auto bg-white">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Digital payments and banking access</h1>
-        <p className="text-sm text-gray-600 mt-1 mb-5">
-          Week 8: I traced my sample back to the FDIC&apos;s 2023 survey, fixed it, and started on how digital payment tools
-          are used by banking status, income, age and education.
-        </p>
-        <div role="tablist" className="flex gap-2 border-b border-gray-200 mb-6">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-4 py-2 text-sm -mb-px border-b-2 ${
-                tab === t.key ? 'border-gray-900 text-gray-900 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        {error && <p className="text-sm text-red-700">{error}</p>}
-        {!error && !data && <p className="text-sm text-gray-500">Loading data…</p>}
-        {data && tab === 'audit' && <AuditTab audit={data.audit} rebuilt={data.rebuilt} />}
-        {data && tab === 'participation' && <Participation data={data.rebuilt} />}
+    <div className="p-6 max-w-4xl w-full overflow-y-auto h-full">
+      <h1 className="text-2xl font-bold mb-1">Left Behind? Mapping America&apos;s Digital Payments Divide</h1>
+      <p className="text-sm text-gray-500 mb-5">
+        2023 FDIC survey of unbanked and underbanked households: {data ? data.n.toLocaleString() : '29,483'} households,
+        weighted to represent all U.S. households.
+      </p>
+      <div className="mb-6">
+        <Pills items={TABS} value={tab} onChange={setTab} name="Choose a view" />
       </div>
+
+      {error && <p className="text-sm text-red-700">{error}</p>}
+      {!error && !data && <p className="text-sm text-gray-500">Loading data…</p>}
+      {data && comps && scores && (
+        <>
+          {tab === 'gap' && <Participation data={data} />}
+          {tab === 'explore' && (
+            <Explorer data={data} comps={comps} scores={scores} active={active} onToggle={toggle} />
+          )}
+          {tab === 'spread' && (
+            <Distributions data={data} comps={comps} scores={scores} active={active} onToggle={toggle} />
+          )}
+          {tab === 'state' && <StateTab data={data} scores={scores} />}
+          {tab === 'tools' && <ToolHeatmap data={data} />}
+        </>
+      )}
     </div>
   );
 }
