@@ -236,3 +236,37 @@ export function HBars({
     </TipFrame>
   );
 }
+
+// ---------- pill buttons ----------
+
+export function Pills({
+  items,
+  value,
+  onChange,
+  name,
+}: {
+  items: { key: string; label: string }[];
+  value: string;
+  onChange: (k: string) => void;
+  name: string;
+}) {
+  return (
+    <div role="group" aria-label={name} className="flex flex-wrap gap-2">
+      {items.map((it) => (
+        <button
+          key={it.key}
+          type="button"
+          aria-pressed={value === it.key}
+          onClick={() => onChange(it.key)}
+          className={`px-3 py-1 rounded-full text-sm border ${
+            value === it.key
+              ? 'bg-gray-900 text-white border-gray-900'
+              : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
+          }`}
+        >
+          {it.label}
+        </button>
+      ))}
+    </div>
+  );
+}

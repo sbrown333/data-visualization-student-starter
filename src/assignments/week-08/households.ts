@@ -14,6 +14,8 @@ export const HOUSEHOLDS_URL = `${import.meta.env.BASE_URL}data/digital-payments/
 export const COLORS = {
   status: { Unbanked: '#d03b3b', Underbanked: '#fab219', 'Fully Banked': '#0ca30c' } as Record<Status, string>,
   oldSample: '#2a78d6',
+  accent: '#2a78d6',
+  muted: '#b8b7b0',
   rebuilt: '#1baf7a',
   fdic: '#eb6834',
   noAccount: '#cfcec7',
@@ -105,6 +107,8 @@ export interface Measure {
   key: string;
   label: string;
   detail: string;
+  // Finishes the sentence "... of fully banked households ___".
+  phrase: string;
   // true or false for households the question applies to, null for the rest.
   test: (h: Households, i: number) => boolean | null;
 }
@@ -113,12 +117,14 @@ export const MEASURES: Measure[] = [
   {
     key: 'online',
     label: 'Online payment services',
+    phrase: 'used nonbank online payment services in the past year',
     detail: 'Used nonbank online payment services in the past 12 months',
     test: (h, i) => yn(h.col.online_payment_services[i]),
   },
   {
     key: 'mobile',
     label: 'Mobile banking',
+    phrase: 'mainly use mobile banking to reach their account',
     detail: 'Mobile banking is the main way the household accesses its account (banked households that answered)',
     test: (h, i) => {
       const a = h.col.access_method[i];
@@ -128,24 +134,28 @@ export const MEASURES: Measure[] = [
   {
     key: 'smartphone',
     label: 'Smartphone',
+    phrase: 'have a smartphone',
     detail: 'Household has a smartphone',
     test: (h, i) => yn(h.col.smartphone[i]),
   },
   {
     key: 'credit',
     label: 'Credit card',
+    phrase: 'used a credit card in the past year',
     detail: 'Used a credit card in the past 12 months',
     test: (h, i) => yn(h.col.credit_card[i]),
   },
   {
     key: 'prepaid',
     label: 'Prepaid card',
+    phrase: 'used a prepaid card in the past year',
     detail: 'Used a prepaid card in the past 12 months',
     test: (h, i) => yn(h.col.prepaid_card[i]),
   },
   {
     key: 'moneyorder',
     label: 'Money orders',
+    phrase: 'bought a nonbank money order in the past year',
     detail: 'Bought a nonbank money order in the past 12 months',
     test: (h, i) => yn(h.col.money_order[i]),
   },
@@ -177,7 +187,26 @@ export const GROUPS: GroupBy[] = [
     column: 'education',
     order: ['No high school diploma', 'High school diploma', 'Some college', 'College degree'],
   },
+  {
+    key: 'employment',
+    label: 'Employment',
+    column: 'employment',
+    order: ['Employed', 'Unemployed', 'Not in labor force'],
+  },
+  {
+    key: 'tenure',
+    label: 'Home ownership',
+    column: 'home_tenure',
+    order: ['Owner', 'Renter or other'],
+  },
 ];
+
+export const STATUS_GROUP: GroupBy = {
+  key: 'status',
+  label: 'Banking status',
+  column: 'banking_status',
+  order: [...STATUSES],
+};
 
 export const SMALL_N = 30;
 
@@ -195,7 +224,7 @@ export interface RateCell {
 // Wilson interval using the effective sample size implied by the weights. It
 // allows for unequal weights but not for the survey's clustering, so the ranges
 // are a little narrower than the FDIC's own.
-function wilson(p: number, neff: number): [number, number] {
+export function wilson(p: number, neff: number): [number, number] {
   const z = 1.96;
   const denom = 1 + (z * z) / neff;
   const center = (p + (z * z) / (2 * neff)) / denom;
@@ -240,4 +269,121 @@ export function computeRates(h: Households, m: Measure, g: GroupBy): RateCell[] 
     }
   }
   return cells;
+}
+
+// ---------- the same rate for many groups and many measures ----------
+
+export interface MatrixCell {
+  group: string;
+  measure: string;
+  n: number;
+  p: number;
+  lo: number;
+  hi: number;
+  small: boolean;
+}
+
+// Weighted rate for every group x measure, optionally for one banking status only.
+export function computeMatrix(h: Households, g: GroupBy, measures: Measure[], status: Status | null): MatrixCell[] {
+  interface Acc {
+    n: number;
+    sw: number;
+    sw2: number;
+    swy: number;
+  }
+  const acc = new Map<string, Acc>();
+  const groupCol = h.col[g.column];
+  const statusCol = h.col.banking_status;
+  for (let i = 0; i < h.n; i++) {
+    if (status && statusCol[i] !== status) continue;
+    for (const m of measures) {
+      const answer = m.test(h, i);
+      if (answer === null) continue;
+      const key = `${groupCol[i]}|${m.key}`;
+      let a = acc.get(key);
+      if (!a) {
+        a = { n: 0, sw: 0, sw2: 0, swy: 0 };
+        acc.set(key, a);
+      }
+      const w = h.w[i];
+      a.n += 1;
+      a.sw += w;
+      a.sw2 += w * w;
+      if (answer) a.swy += w;
+    }
+  }
+  const out: MatrixCell[] = [];
+  for (const group of g.order) {
+    for (const m of measures) {
+      const a = acc.get(`${group}|${m.key}`);
+      if (!a || a.n === 0) continue;
+      const p = a.swy / a.sw;
+      const [lo, hi] = wilson(p, (a.sw * a.sw) / a.sw2);
+      out.push({ group, measure: m.key, n: a.n, p, lo, hi, small: a.n < SMALL_N });
+    }
+  }
+  return out;
+}
+
+export interface GroupMean {
+  group: string;
+  n: number;
+  mean: number; // weighted mean, same units as the values
+  lo: number;
+  hi: number;
+  households: number; // weighted households
+}
+
+// Weighted mean of a per-household value (0 to 1) for each group. Binary values
+// get a Wilson range; other values get a normal range from the weighted variance.
+export function groupMeans(
+  h: Households,
+  groupCol: string,
+  value: (i: number) => number | null,
+  binary: boolean,
+): Map<string, GroupMean> {
+  interface Acc {
+    n: number;
+    sw: number;
+    sw2: number;
+    swx: number;
+    rows: number[];
+  }
+  const acc = new Map<string, Acc>();
+  const col = h.col[groupCol];
+  for (let i = 0; i < h.n; i++) {
+    const v = value(i);
+    if (v === null || Number.isNaN(v)) continue;
+    let a = acc.get(col[i]);
+    if (!a) {
+      a = { n: 0, sw: 0, sw2: 0, swx: 0, rows: [] };
+      acc.set(col[i], a);
+    }
+    const w = h.w[i];
+    a.n += 1;
+    a.sw += w;
+    a.sw2 += w * w;
+    a.swx += w * v;
+    a.rows.push(i);
+  }
+  const out = new Map<string, GroupMean>();
+  for (const [group, a] of acc) {
+    const mean = a.swx / a.sw;
+    let lo: number;
+    let hi: number;
+    if (binary) {
+      [lo, hi] = wilson(mean, (a.sw * a.sw) / a.sw2);
+    } else {
+      let ss = 0;
+      for (const i of a.rows) {
+        const d = (value(i) ?? mean) - mean;
+        ss += h.w[i] * h.w[i] * d * d;
+      }
+      const se = Math.sqrt(ss) / a.sw;
+      lo = Math.max(0, mean - 1.96 * se);
+      hi = Math.min(1, mean + 1.96 * se);
+    }
+    out.set(group, { group, n: a.n, mean, lo, hi, households: a.sw });
+  }
+  return out;
 }

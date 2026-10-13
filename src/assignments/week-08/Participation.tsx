@@ -4,7 +4,7 @@ import { STATUSES } from './audit';
 import type { Status } from './audit';
 import { COLORS, GROUPS, MEASURES, SMALL_N, computeRates, weightedShare } from './households';
 import type { Households } from './households';
-import { Card, Legend, TipFrame } from './parts';
+import { Card, Pills, TipFrame } from './parts';
 
 // Week 8, tab 2: how digital payment tools are used, by banking status and by
 // income, age or education. Every rate is weighted with the FDIC household
@@ -19,45 +19,25 @@ const DODGE: Record<Status, number> = { Unbanked: -16, Underbanked: 0, 'Fully Ba
 const fmt = (n: number) => n.toLocaleString();
 const pc = (p: number) => `${(100 * p).toFixed(1)}%`;
 
-function Pills<T extends { key: string; label: string }>({
-  items,
-  value,
-  onChange,
-  name,
-}: {
-  items: T[];
-  value: string;
-  onChange: (k: string) => void;
-  name: string;
-}) {
-  return (
-    <div role="group" aria-label={name} className="flex flex-wrap gap-2">
-      {items.map((it) => (
-        <button
-          key={it.key}
-          type="button"
-          aria-pressed={value === it.key}
-          onClick={() => onChange(it.key)}
-          className={`px-3 py-1 rounded-full text-sm border ${
-            value === it.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
-          }`}
-        >
-          {it.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function Participation({ data }: { data: Households }) {
   const [measureKey, setMeasureKey] = useState('online');
   const [groupKey, setGroupKey] = useState('income');
   const [asTable, setAsTable] = useState(false);
+  const [hidden, setHidden] = useState<Set<Status>>(new Set());
 
   const measure = MEASURES.find((m) => m.key === measureKey) ?? MEASURES[0];
   const group = GROUPS.find((g) => g.key === groupKey) ?? GROUPS[0];
 
-  const cells = useMemo(() => computeRates(data, measure, group), [data, measure, group]);
+  const allCells = useMemo(() => computeRates(data, measure, group), [data, measure, group]);
+  const cells = useMemo(() => allCells.filter((c) => !hidden.has(c.status)), [allCells, hidden]);
+  const present = STATUSES.filter((s) => allCells.some((c) => c.status === s));
+  const toggle = (s: Status) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s);
+      else next.add(s);
+      return next;
+    });
   const overall = useMemo(() => {
     const S = data.col.banking_status;
     const out = {} as Record<Status, number | null>;
@@ -77,8 +57,7 @@ export function Participation({ data }: { data: Households }) {
     return out;
   }, [data, measure]);
 
-  const groups = group.order.filter((g) => cells.some((c) => c.group === g));
-  const statuses = STATUSES.filter((s) => cells.some((c) => c.status === s));
+  const groups = group.order.filter((g) => allCells.some((c) => c.group === g));
   const H = M.top + groups.length * BAND + M.bottom;
   const iw = W - M.left - M.right;
   const x = scaleLinear().domain([0, 1]).range([0, iw]);
@@ -103,15 +82,27 @@ export function Participation({ data }: { data: Households }) {
 
         {hi !== null && lo !== null && (
           <p className="text-sm text-gray-800 mb-3" aria-live="polite">
-            Overall, {hi.toFixed(1)}% of fully banked households {measure.key === 'mobile' ? 'use mobile banking as their main way in' : 'report this'}
-            , against {lo.toFixed(1)}% of {lowStatus.toLowerCase()} households.
+            Overall, {hi.toFixed(1)}% of fully banked households {measure.phrase}, against {lo.toFixed(1)}% of{' '}
+            {lowStatus.toLowerCase()} households.
           </p>
         )}
 
         <div className="flex items-center justify-between mb-2">
-          <Legend
-            items={statuses.map((s) => ({ label: s, color: COLORS.status[s] }))}
-          />
+          <div role="group" aria-label="Show or hide banking statuses" className="flex flex-wrap gap-2">
+            {present.map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={!hidden.has(s)}
+                onClick={() => toggle(s)}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-sm text-gray-800"
+                style={{ borderColor: COLORS.status[s], opacity: hidden.has(s) ? 0.4 : 1 }}
+              >
+                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.status[s] }} />
+                {s}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             className="text-sm underline text-gray-700"
@@ -234,8 +225,7 @@ export function Participation({ data }: { data: Households }) {
         )}
         <p className="text-xs text-gray-500 mt-2">
           Lines show an approximate 95% range. Hollow dots mean fewer than {SMALL_N} surveyed households
-          {smallCount > 0 ? ` (${smallCount} here)` : ''}, so treat them as rough. The FDIC survey has no measure of how much
-          people pay in cash, so this page shows who has and uses digital tools, not how payments changed over time.
+          {smallCount > 0 ? ` (${smallCount} here)` : ''}, so treat them as rough. Click a banking status above to hide it.
         </p>
       </Card>
     </div>
