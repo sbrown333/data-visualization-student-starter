@@ -119,3 +119,44 @@ Three views, chosen with a tab switcher rather than shown all at once (see peer 
 - **By State** — a live choropleth map of the U.S., colored by the selected banking status's rate per state, replacing Sketch 1's rough circle-on-outline idea with an actual interactive map.
 
 **Peer feedback incorporated:** a classmate (Chris) flagged that stacking every panel on one page risked overwhelming a first-time viewer. In response, Week 6 uses a tabbed layout so only one view renders at a time, and the three demographic bar charts (age/income/education) were combined into a single panel with a toggle rather than shown as three separate charts.
+
+
+## Week 7 / Linked Brushing
+
+Week 7 added **linked brushing**: drag a box on one chart and a second chart updates to show only the households selected. It follows Allison Horst's Observable article on linked brushing, adapted to this project's data.
+
+**Live:** [Week 7: Linked Brushing](https://sbrown333.github.io/data-visualization-student-starter/?example=7)
+
+- Each bubble is an age and household-size pair, sized by how many households share it. Selected bubbles stay blue and the rest fade to gray.
+- A linked pair of stacked bars splits banking status for all 10,000 households and for the selection. Selecting the 275 households under 25 shows 5.5% unbanked, against 1.9% overall.
+- The page warns when a selection has fewer than 30 households, since small groups are unreliable.
+- **Limitation found:** the 10,000-household sample has only two numeric columns (age and household size), so the brush could only work on those. This pushed the Week 8 rebuild of the dataset.
+
+## Week 8 / Iterate Your Project
+
+**Live:** [Week 8](https://sbrown333.github.io/data-visualization-student-starter/?example=8)
+
+**Expanded dataset.** I rebuilt the data from the full 2023 FDIC household survey: 29,483 households and 29 columns, up from 10,000 households and 15 columns. Results use the survey weights, so they stand for all U.S. households. I checked the rebuild by reproducing 37 published FDIC figures.
+
+**Five views, none of them bar charts:**
+
+- **Adoption gap:** a dot plot of online payment use by banking status (50.3% of fully banked households vs. 20.1% of unbanked ones), with a clickable legend.
+- **Explorer:** an age-by-income heatmap with brushing, linked to a readiness curve.
+- **Spread:** distributions of the readiness score by group.
+- **State:** a map linked to a scatterplot of unbanked rate against online payment use.
+- **Tools:** a heatmap of which payment tools each group uses.
+
+**Digital Payment Readiness Score.** My own index (not an official measure), the average of banking status, smartphone, online payments, credit card, digital banking, and income, scaled 0 to 100. Each component can be switched on or off. Cash dependence is not in the 2023 data, so it is shown but disabled, and smartphone use stands in for internet access.
+
+## Week 10 / New Interaction: Brushing the States
+
+**Live:** [Week 10](https://sbrown333.github.io/data-visualization-student-starter/?example=10)
+
+In Week 8 the state map and scatterplot were linked only by hovering over one state at a time. Week 10 adds **brushing**: drag a box on the scatterplot (unbanked rate vs. online payment use) to select many states at once. Selected states keep their color on the map and the rest turn gray, and a summary recalculates their combined unbanked rate, online payment use, and share of all U.S. unbanked households. It also has preset selections, a Clear button, tooltips, and a table of the selected states.
+
+The preset "Higher exclusion, lower online use" selects 16 states, which are 5.9% unbanked (nation 4.2%) and 46.9% online (nation 49.7%). They hold 52% of all unbanked U.S. households.
+
+## Next Steps and Blockers
+
+- **Expand the dataset further:** add the FDIC 2019 and 2021 surveys so the project can show change over time (the north star timeline), and find a cash-use source such as the Federal Reserve's payment-choice surveys.
+- **Blockers:** only one survey year, and no cash-use or home internet variables in the 2023 file. If a second year does not line up, the fallback is a deeper 2023 view by state, age, and income.
