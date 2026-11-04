@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { scaleLinear } from 'd3-scale';
 import { geoAlbersUsa, geoPath } from 'd3-geo';
 import type { FeatureCollection, Geometry } from 'geojson';
 import { COLORS, GROUPS, HOUSEHOLDS_URL, SMALL_N, parseHouseholds } from '../week-08/households';
 import type { Households } from '../week-08/households';
 import { ALL_KEYS, buildComponents, scoreAll } from '../week-08/readiness';
-import { Pills, TipFrame } from '../week-08/parts';
+import { Tip } from './tip';
 import { ACCESS_METHODS, accessShares, countKept, overallStat, statsBy } from './dash';
 import type { Stat } from './dash';
 
@@ -37,8 +38,8 @@ const METRICS: Metric[] = [
     value: (h) => (i) => (h.col.banking_status[i] === 'Unbanked' ? 1 : 0),
     binary: true,
     percent: true,
-    ramp: ['#fbd9d9', '#a82525'],
-    color: COLORS.status.Unbanked,
+    ramp: ['#f1e2e4', '#a8384f'],
+    color: '#a8384f',
     sentence: 'are unbanked',
   },
   {
@@ -47,8 +48,8 @@ const METRICS: Metric[] = [
     value: (h) => (i) => yn(h.col.online_payment_services[i]),
     binary: true,
     percent: true,
-    ramp: ['#dbe9fa', '#1f5fae'],
-    color: COLORS.accent,
+    ramp: ['#e0e8ee', '#3a6a92'],
+    color: '#3a6a92',
     sentence: 'use online payment services',
   },
   {
@@ -57,8 +58,8 @@ const METRICS: Metric[] = [
     value: (h) => (i) => yn(h.col.smartphone[i]),
     binary: true,
     percent: true,
-    ramp: ['#dbe9fa', '#1f5fae'],
-    color: COLORS.accent,
+    ramp: ['#e0e8ee', '#3a6a92'],
+    color: '#3a6a92',
     sentence: 'have a smartphone',
   },
   {
@@ -67,8 +68,8 @@ const METRICS: Metric[] = [
     value: (_h, s) => (i) => (Number.isNaN(s[i]) ? null : s[i] / 100),
     binary: false,
     percent: false,
-    ramp: ['#dbe9fa', '#1f5fae'],
-    color: COLORS.accent,
+    ramp: ['#e0e8ee', '#3a6a92'],
+    color: '#3a6a92',
     sentence: 'score on readiness',
   },
 ];
@@ -82,10 +83,35 @@ const NO_FILTERS: Filters = Object.fromEntries(GROUPS.map((g) => [g.key, null]))
 const W = 760;
 const MAP_H = 440;
 
+// Look: cool slate. Slate title bars, light gray page, soft teal for the active choice.
+const INK = '#37424f';
+const PAGE = '#e8ebee';
+const PANEL = '#fafbfc';
+const CHIP = '#dde3e8';
+const PICK = '#cfe5e2';
+const ACCENT = '#6aa5a0';
+const FONT = "'Nunito', 'Trebuchet MS', 'Segoe UI', sans-serif";
+const SHORT: Record<string, string> = {
+  'No high school diploma': 'No HS diploma',
+  'High school diploma': 'HS diploma',
+  'Renter or other': 'Renter / other',
+};
+
 export function Week11() {
   const [data, setData] = useState<Households | null>(null);
   const [geo, setGeo] = useState<Geo | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // The font is loaded for this page only and removed when you leave it.
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap';
+    document.head.appendChild(link);
+    return () => {
+      link.remove();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,15 +139,45 @@ export function Week11() {
   }, []);
 
   return (
-    <div className="p-6 max-w-5xl w-full overflow-y-auto h-full">
-      <h1 className="text-2xl font-bold mb-1">Left Behind? Mapping America&apos;s Digital Payments Divide</h1>
-      <p className="text-sm text-gray-500 mb-4">
-        2023 FDIC survey of unbanked and underbanked households, weighted to represent all U.S. households.
-      </p>
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {!error && (!data || !geo) && <p className="text-sm text-gray-500">Loading data…</p>}
+    <div className="w-full h-full overflow-y-auto flex flex-col" style={{ background: PAGE, fontFamily: FONT, color: INK }}>
+      {error && <p className="p-6 text-sm text-red-700">{error}</p>}
+      {!error && (!data || !geo) && <p className="p-6 text-sm text-gray-600">Loading data…</p>}
       {data && geo && <Dashboard data={data} geo={geo} />}
     </div>
+  );
+}
+
+// ---------- shared look ----------
+
+function Panel({ title, right, children, className = '', bg = PANEL }: { title?: string; right?: ReactNode; children: ReactNode; className?: string; bg?: string }) {
+  return (
+    <section className={`flex flex-col rounded-2xl overflow-hidden min-h-0 ${className}`} style={{ background: bg, border: `2px solid ${INK}` }}>
+      {title && (
+        <header className="px-3 py-1.5 text-center text-sm font-extrabold text-white relative" style={{ background: INK }}>
+          {title}
+          {right && <div className="absolute right-2 top-1/2 -translate-y-1/2">{right}</div>}
+        </header>
+      )}
+      <div className="flex-1 min-h-0 flex flex-col p-2">{children}</div>
+    </section>
+  );
+}
+
+function Chip({ active, onClick, children, dark = false }: { active: boolean; onClick: () => void; children: ReactNode; dark?: boolean }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className="px-3 py-1 rounded-full text-xs font-bold"
+      style={
+        active
+          ? { background: ACCENT, color: INK, border: `2px solid ${dark ? ACCENT : INK}` }
+          : { background: dark ? 'transparent' : PANEL, color: dark ? '#fff' : INK, border: `2px solid ${dark ? 'rgba(255,255,255,0.55)' : INK}` }
+      }
+    >
+      {children}
+    </button>
   );
 }
 
@@ -129,6 +185,7 @@ function Dashboard({ data, geo }: { data: Households; geo: Geo }) {
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [states, setStates] = useState<ReadonlySet<string>>(new Set());
   const [metricKey, setMetricKey] = useState('unbanked');
+  const [showAbout, setShowAbout] = useState(false);
   const metric = METRICS.find((m) => m.key === metricKey) ?? METRICS[0];
 
   const scores = useMemo(() => scoreAll(data, buildComponents(data), new Set(ALL_KEYS)), [data]);
@@ -179,18 +236,36 @@ function Dashboard({ data, geo }: { data: Households; geo: Geo }) {
     () => overallStat(data, () => true, metric.value(data, scores), metric.binary),
     [data, scores, metric],
   );
-  const selStat = tiles.rows.find((r) => r.m.key === metric.key)?.sel ?? overallStat(data, keepFor(null), metric.value(data, scores), metric.binary);
+  const selStat = useMemo(
+    () => overallStat(data, keepFor(null), metric.value(data, scores), metric.binary),
+    [data, scores, metric, keepFor],
+  );
 
   return (
-    <div>
-      {/* ---------- filter bar ---------- */}
-      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 mb-4 bg-white/95 backdrop-blur border-b border-gray-200">
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+    <div className="flex-1 flex flex-col gap-3 p-3">
+      {/* ---------- top bar: title, filters, measure ---------- */}
+      <header className="rounded-2xl px-4 py-2.5" style={{ background: INK, border: `2px solid ${INK}` }}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-2">
+          <h1 className="text-base font-extrabold text-white leading-tight">Left Behind? Mapping America&apos;s Digital Payments Divide</h1>
+          <div className="flex flex-wrap items-center gap-1.5 ml-auto" role="group" aria-label="Choose a measure">
+            <span className="text-[11px] font-bold text-white/70 mr-1">Show:</span>
+            {METRICS.map((m) => (
+              <Chip dark key={m.key} active={m.key === metricKey} onClick={() => setMetricKey(m.key)}>
+                {m.label}
+              </Chip>
+            ))}
+          </div>
+          <Chip dark active={false} onClick={() => setShowAbout(true)}>
+            About the data
+          </Chip>
+        </div>
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
           {GROUPS.map((g) => (
-            <label key={g.key} className="text-xs text-gray-500 flex flex-col">
+            <label key={g.key} className="text-[11px] font-bold text-white/70 flex flex-col">
               {g.label}
               <select
-                className="mt-0.5 border border-gray-300 rounded-lg px-2 py-1 text-sm text-gray-900 bg-white"
+                className="mt-0.5 rounded-lg px-2 py-1 text-sm font-semibold"
+                style={{ background: PANEL, color: INK, border: `2px solid ${INK}` }}
                 value={filters[g.key] ?? ''}
                 onChange={(e) => setFilter(g.key, e.target.value || null)}
               >
@@ -203,91 +278,94 @@ function Dashboard({ data, geo }: { data: Households; geo: Geo }) {
               </select>
             </label>
           ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2 mt-2 text-sm min-h-7">
+          <div className="flex items-center gap-1.5 pb-1">
+            <span className="text-[11px] font-bold text-white/70">States:</span>
+            {states.size === 0 ? (
+              <span className="text-[11px] text-white/70">all</span>
+            ) : (
+              [...states].sort().map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => toggleState(s)}
+                  aria-label={`Remove ${names.get(s) ?? s} from the filter`}
+                  className="px-2 py-0.5 rounded-full text-xs font-bold"
+                  style={{ background: ACCENT, color: INK }}
+                >
+                  {s} ✕
+                </button>
+              ))
+            )}
+          </div>
           <button
             type="button"
             onClick={reset}
             disabled={!anyFilter}
-            className="px-3 py-0.5 rounded-full border border-gray-300 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+            className="px-3 py-1 mb-0.5 rounded-full text-xs font-bold text-white disabled:opacity-40"
+            style={{ border: '2px solid rgba(255,255,255,0.55)' }}
           >
             Reset all
           </button>
-          <span className="text-xs text-gray-500">States:</span>
-          {states.size === 0 ? (
-            <span className="text-gray-500 text-xs">all (click states on the map to pick some)</span>
-          ) : (
-            [...states].sort().map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => toggleState(s)}
-                aria-label={`Remove ${names.get(s) ?? s} from the filter`}
-                className="px-2 py-0.5 rounded-full bg-gray-900 text-white text-xs"
-              >
-                {s} ✕
-              </button>
-            ))
-          )}
         </div>
-      </div>
+      </header>
 
-      {/* ---------- headline ---------- */}
-      <Headline tiles={tiles} anyFilter={anyFilter} />
-
-      {/* ---------- summary tiles ---------- */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="border border-gray-200 rounded-xl p-3 bg-white">
-          <div className="text-xs text-gray-500">Households in view</div>
-          <div className="text-2xl font-bold">{fmtM(tiles.counts.households)}</div>
-          <div className="text-xs text-gray-500">
-            {tiles.counts.n.toLocaleString()} surveyed of {tiles.total.n.toLocaleString()}
+      {/* ---------- summary strip ---------- */}
+      <Panel>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Headline tiles={tiles} anyFilter={anyFilter} />
+          <div className="flex flex-wrap gap-2 ml-auto">
+            <Tile label="Households in view" value={fmtM(tiles.counts.households)} sub={`${tiles.counts.n.toLocaleString()} of ${tiles.total.n.toLocaleString()} surveyed`} />
+            {tiles.rows.map(({ m, sel, nat }) => (
+              <Tile key={m.key} label={m.label} value={sel ? fmt(m, sel.mean) : 'n/a'} sub={`nation ${nat ? fmt(m, nat.mean) : 'n/a'}`} />
+            ))}
           </div>
         </div>
-        {tiles.rows.map(({ m, sel, nat }) => (
-          <div key={m.key} className="border border-gray-200 rounded-xl p-3 bg-white">
-            <div className="text-xs text-gray-500">{m.label}</div>
-            <div className="text-2xl font-bold">{sel ? fmt(m, sel.mean) : 'n/a'}</div>
-            <div className="text-xs text-gray-500">nation {nat ? fmt(m, nat.mean) : 'n/a'}</div>
+      </Panel>
+
+      {/* ---------- map on the left, charts on the right ---------- */}
+      <div className="grid gap-3 xl:grid-cols-[1fr_1.1fr] xl:flex-1 xl:min-h-[600px]">
+        <div className="grid gap-3 xl:grid-rows-[auto_1fr] min-h-0">
+          <GroupPanels data={data} metric={metric} scores={scores} keepFor={keepFor} filters={filters} onToggle={toggleFilter} nat={natStat} sel={selStat} />
+          <AccessHeatmap data={data} keepFor={keepFor} filters={filters} onToggle={toggleFilter} />
+        </div>
+        <StateMap data={data} geo={geo} names={names} metric={metric} scores={scores} keepFor={keepFor} states={states} onToggle={toggleState} />
+      </div>
+
+      {showAbout && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-6" style={{ background: 'rgba(55,66,79,0.5)' }} onClick={() => setShowAbout(false)}>
+          <div className="max-w-xl w-full" onClick={(e) => e.stopPropagation()}>
+            <Panel title="About the data" right={<Chip active={false} onClick={() => setShowAbout(false)}>Close</Chip>}>
+              <div className="text-sm leading-relaxed p-2">
+                <p className="mb-2">
+                  Source: FDIC National Survey of Unbanked and Underbanked Households, 2023 (29,483 responding households). Every
+                  rate uses the FDIC household weight, so it stands for all U.S. households, not just those surveyed. Ranges are
+                  approximate 95% ranges that allow for unequal weights but not the survey&apos;s clustering, so they are a little
+                  narrower than the FDIC&apos;s own. Hollow dots and gray cells mean fewer than {SMALL_N} surveyed households, too few to trust.
+                </p>
+                <p>
+                  The readiness score is my own index, not an official measure: the average of banking status, smartphone, online
+                  payments, credit card, digital banking and income, scaled 0 to 100. Cash dependence and home internet are not in
+                  the 2023 file, so a smartphone stands in for internet access.
+                </p>
+              </div>
+            </Panel>
           </div>
-        ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Tile({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="rounded-xl px-2.5 py-1 min-w-[112px]" style={{ background: CHIP }}>
+      <div className="text-[11px] font-bold" style={{ opacity: 0.7 }}>
+        {label}
       </div>
-
-      {/* ---------- measure picker ---------- */}
-      <div className="flex flex-wrap items-center gap-3 mb-3">
-        <span className="text-sm font-semibold text-gray-900">Show on the map and charts:</span>
-        <Pills items={METRICS.map((m) => ({ key: m.key, label: m.label }))} value={metricKey} onChange={setMetricKey} name="Choose a measure" />
+      <div className="text-lg font-extrabold leading-tight">{value}</div>
+      <div className="text-[11px]" style={{ opacity: 0.7 }}>
+        {sub}
       </div>
-
-      <StateMap data={data} geo={geo} names={names} metric={metric} scores={scores} keepFor={keepFor} states={states} onToggle={toggleState} />
-
-      <GroupPanels
-        data={data}
-        metric={metric}
-        scores={scores}
-        keepFor={keepFor}
-        filters={filters}
-        onToggle={toggleFilter}
-        nat={natStat}
-        sel={selStat}
-      />
-
-      <AccessHeatmap data={data} keepFor={keepFor} filters={filters} onToggle={toggleFilter} />
-
-      <section className="mb-10 text-xs text-gray-500 leading-relaxed">
-        <h2 className="text-sm font-semibold text-gray-900 mb-1">About these numbers</h2>
-        <p className="mb-1">
-          Source: FDIC National Survey of Unbanked and Underbanked Households, 2023 (29,483 responding households). Every
-          rate uses the FDIC household weight, so it stands for all U.S. households, not just those surveyed. Ranges are
-          approximate 95% ranges that allow for unequal weights but not the survey&apos;s clustering, so they are a little
-          narrower than the FDIC&apos;s own. Hollow dots and gray cells mean fewer than {SMALL_N} surveyed households, too few to trust.
-        </p>
-        <p>
-          The readiness score is my own index, not an official measure: the average of banking status, smartphone, online
-          payments, credit card, digital banking and income, scaled 0 to 100. Cash dependence and home internet are not in
-          the 2023 file, so a smartphone stands in for internet access.
-        </p>
-      </section>
     </div>
   );
 }
@@ -305,7 +383,7 @@ function Headline({
   let text: string;
   if (!un || !un.nat) text = '';
   else if (!anyFilter) {
-    text = `In 2023, ${fmt(un.m, un.nat.mean)} of U.S. households were unbanked, about ${fmtM(un.nat.households * un.nat.mean)} households. Use the menus above, or click states on the map, to see who is left behind.`;
+    text = `In 2023, ${fmt(un.m, un.nat.mean)} of U.S. households were unbanked, about ${fmtM(un.nat.households * un.nat.mean)} households. Use the menus, or click states on the map, to see who is left behind.`;
   } else if (!un.sel || tiles.counts.n < SMALL_N) {
     text = `Only ${tiles.counts.n} surveyed households match these filters, too few to trust. Try fewer filters.`;
   } else {
@@ -314,7 +392,7 @@ function Headline({
     text = `Households matching your filters (${fmtM(tiles.counts.households)}) are ${fmt(un.m, un.sel.mean)} unbanked (nation ${fmt(un.m, un.nat.mean)}), ${rel}.`;
   }
   return (
-    <p className="text-base text-gray-900 mb-4" aria-live="polite">
+    <p className="text-sm font-semibold flex-1 min-w-[260px]" aria-live="polite">
       {text}
     </p>
   );
@@ -361,28 +439,12 @@ function StateMap({
   const hoverStat = hover ? stats.get(hover) : undefined;
 
   return (
-    <section className="mb-10">
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Where: {metric.label.toLowerCase()} by state</h2>
-      <p className="text-sm text-gray-500 mb-2">
-        Click states to add them to the filters. The map follows every other filter. Gray states have too few matching households.
-      </p>
-      <div className="min-h-10 mb-2 border border-gray-200 rounded-xl px-3 py-2 bg-white text-sm" aria-live="polite">
-        {hover ? (
-          <>
-            <span className="font-semibold text-gray-900">{names.get(hover) ?? hover}</span>:{' '}
-            {hoverStat && hoverStat.n >= SMALL_N
-              ? `${fmt(metric, hoverStat.mean)} (range ${fmt(metric, hoverStat.lo)} to ${fmt(metric, hoverStat.hi)}), ${hoverStat.n.toLocaleString()} households surveyed.`
-              : `only ${hoverStat?.n ?? 0} matching households surveyed, too few to show.`}
-          </>
-        ) : (
-          <span className="text-gray-500">Hover a state to read it.</span>
-        )}
-      </div>
-      <TipFrame>
+    <Panel bg="#ffffff" title={`Where: ${metric.label.toLowerCase()} by state`}>
+      <Tip className="flex-1 min-h-[300px]">
         {(show, hide) => (
           <svg
             viewBox={`0 0 ${W} ${MAP_H}`}
-            width="100%"
+            className="absolute inset-0 w-full h-full"
             role="group"
             aria-label={`Map of U.S. states shaded by ${metric.label.toLowerCase()}. Click a state to filter.`}
             onPointerLeave={() => {
@@ -405,7 +467,7 @@ function StateMap({
                   aria-label={`${names.get(p.abbr) ?? p.abbr}${ok ? `, ${fmt(metric, s.mean)}` : ', too few households'}`}
                   fill={ok ? shade(s.mean) : '#e4e3de'}
                   fillOpacity={dim ? 0.4 : 1}
-                  stroke={picked ? COLORS.ink : hover === p.abbr ? COLORS.ink2 : COLORS.surface}
+                  stroke={picked ? INK : hover === p.abbr ? COLORS.ink2 : PANEL}
                   strokeWidth={picked ? 2.5 : hover === p.abbr ? 2 : 1}
                   style={{ cursor: 'pointer', outline: 'none' }}
                   onClick={() => onToggle(p.abbr)}
@@ -428,21 +490,35 @@ function StateMap({
             })}
           </svg>
         )}
-      </TipFrame>
-      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-        <span>{fmt(metric, lo)}</span>
-        <div className="h-3 w-40 rounded-full" style={{ background: `linear-gradient(to right, ${metric.ramp[0]}, ${metric.ramp[1]})` }} />
-        <span>{fmt(metric, hi)}</span>
+      </Tip>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-xs" aria-live="polite">
+        <div className="flex items-center gap-1.5 font-semibold">
+          <span>{fmt(metric, lo)}</span>
+          <div className="h-2.5 w-28 rounded-full" style={{ background: `linear-gradient(to right, ${metric.ramp[0]}, ${metric.ramp[1]})` }} />
+          <span>{fmt(metric, hi)}</span>
+        </div>
+        <span style={{ opacity: 0.75 }}>
+          {hover ? (
+            <>
+              <b>{names.get(hover) ?? hover}</b>:{' '}
+              {hoverStat && hoverStat.n >= SMALL_N
+                ? `${fmt(metric, hoverStat.mean)} (range ${fmt(metric, hoverStat.lo)} to ${fmt(metric, hoverStat.hi)}), ${hoverStat.n.toLocaleString()} surveyed`
+                : `only ${hoverStat?.n ?? 0} matching households, too few to show`}
+            </>
+          ) : (
+            'Click states to filter. Gray states have too few matching households.'
+          )}
+        </span>
       </div>
-    </section>
+    </Panel>
   );
 }
 
 // ---------- dot plots by group ----------
 
-const PW = 440;
-const ROW = 28;
-const LABEL_W = 160;
+const PW = 205;
+const ROW = 22;
+const LABEL_W = 86;
 
 function GroupPanels({
   data,
@@ -471,42 +547,35 @@ function GroupPanels({
     }));
   }, [data, metric, scores, keepFor]);
   const top = Math.max(0.01, ...panels.flatMap((p) => [...p.stats.values()].filter((s) => s.n >= SMALL_N).map((s) => s.hi))) * 1.05;
-  const x = scaleLinear().domain([0, Math.min(1, top)]).range([LABEL_W, PW - 16]);
+  const x = scaleLinear().domain([0, Math.min(1, top)]).range([LABEL_W, PW - 12]);
 
   return (
-    <section className="mb-10">
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Who: {metric.label.toLowerCase()} by group</h2>
-      <p className="text-sm text-gray-500 mb-2">
-        Click a row to filter to that group. Each chart follows the other filters, so you can compare groups within your selection.
-      </p>
-      <div className="grid md:grid-cols-2 gap-3">
+    <Panel title={`Who: ${metric.label.toLowerCase()} by group`}>
+      <div className="grid gap-x-2 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
         {panels.map(({ g, stats }) => {
-          const H = g.order.length * ROW + 30;
+          const H = g.order.length * ROW + 22;
           return (
-            <TipFrame key={g.key}>
+            <Tip key={g.key}>
               {(show, hide) => (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">{g.label}</h3>
+                  <h3 className="text-xs font-extrabold">{g.label}</h3>
                   <svg viewBox={`0 0 ${PW} ${H}`} width="100%" role="group" aria-label={`${metric.label} by ${g.label.toLowerCase()}`} onPointerLeave={hide}>
-                    {x.ticks(4).map((t) => (
+                    {x.ticks(3).map((t) => (
                       <g key={t} transform={`translate(${x(t)},0)`}>
-                        <line y1={4} y2={H - 22} stroke={COLORS.grid} />
-                        <text y={H - 8} textAnchor="middle" fontSize={11} fill={COLORS.ink2}>
+                        <line y1={2} y2={H - 16} stroke="#dde3e8" />
+                        <text y={H - 4} textAnchor="middle" fontSize={10} fill={COLORS.ink2}>
                           {metric.percent ? `${(100 * t).toFixed(0)}%` : (100 * t).toFixed(0)}
                         </text>
                       </g>
                     ))}
-                    {nat && (
-                      <line x1={x(nat.mean)} x2={x(nat.mean)} y1={4} y2={H - 22} stroke={COLORS.muted} strokeDasharray="4 3" strokeWidth={1.5} />
-                    )}
-                    {sel && (
-                      <line x1={x(sel.mean)} x2={x(sel.mean)} y1={4} y2={H - 22} stroke={metric.color} strokeOpacity={0.35} strokeWidth={1.5} />
-                    )}
+                    {nat && <line x1={x(nat.mean)} x2={x(nat.mean)} y1={2} y2={H - 16} stroke="#7b8794" strokeDasharray="4 3" strokeWidth={1.5} />}
+                    {sel && <line x1={x(sel.mean)} x2={x(sel.mean)} y1={2} y2={H - 16} stroke={metric.color} strokeOpacity={0.4} strokeWidth={1.5} />}
                     {g.order.map((o, k) => {
                       const s = stats.get(o);
-                      const y = 6 + k * ROW + ROW / 2;
+                      const y = 4 + k * ROW + ROW / 2;
                       const picked = filters[g.key] === o;
                       const ok = s !== undefined && s.n >= SMALL_N;
+                      const label = SHORT[o] ?? o;
                       return (
                         <g
                           key={o}
@@ -532,14 +601,14 @@ function GroupPanels({
                             )
                           }
                         >
-                          <rect x={0} y={y - ROW / 2} width={PW} height={ROW} fill={picked ? '#eef3fb' : 'transparent'} rx={6} />
-                          <text x={6} y={y} dy="0.32em" fontSize={12} fontWeight={picked ? 700 : 400} fill={COLORS.ink}>
-                            {o.length > 24 ? `${o.slice(0, 23)}…` : o}
+                          <rect x={0} y={y - ROW / 2} width={PW} height={ROW} fill={picked ? PICK : 'transparent'} rx={5} />
+                          <text x={4} y={y} dy="0.32em" fontSize={10.5} fontWeight={picked ? 800 : 600} fill={INK}>
+                            {label.length > 15 ? `${label.slice(0, 14)}…` : label}
                           </text>
                           {s && (
                             <>
                               <line x1={x(s.lo)} x2={x(s.hi)} y1={y} y2={y} stroke={metric.color} strokeOpacity={0.45} strokeWidth={3} strokeLinecap="round" />
-                              <circle cx={x(s.mean)} cy={y} r={6} fill={ok ? metric.color : COLORS.surface} stroke={metric.color} strokeWidth={2} />
+                              <circle cx={x(s.mean)} cy={y} r={5} fill={ok ? metric.color : PANEL} stroke={metric.color} strokeWidth={2} />
                             </>
                           )}
                         </g>
@@ -548,21 +617,16 @@ function GroupPanels({
                   </svg>
                 </div>
               )}
-            </TipFrame>
+            </Tip>
           );
         })}
-        <div className="border border-gray-200 rounded-xl p-3 bg-white text-sm text-gray-700">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">How to read these</h3>
-          <ul className="space-y-1.5 text-xs">
-            <li>Dot: the rate for that group. The line around it is the approximate 95% range.</li>
-            <li>Dashed gray line: the national rate{nat ? ` (${fmt(metric, nat.mean)})` : ''}.</li>
-            <li>Faint colored line: the rate for everything currently in view{sel ? ` (${fmt(metric, sel.mean)})` : ''}.</li>
-            <li>Hollow dot: fewer than {SMALL_N} surveyed households, too few to trust.</li>
-            <li>A highlighted row is an active filter. Click it again to remove it.</li>
-          </ul>
+        <div className="text-[11px] leading-snug self-start rounded-xl p-2" style={{ background: CHIP }}>
+          <div className="font-extrabold mb-0.5">How to read</div>
+          Dot = group rate, line = 95% range. Dashed = nation{nat ? ` (${fmt(metric, nat.mean)})` : ''}. Faint line = everything in view
+          {sel ? ` (${fmt(metric, sel.mean)})` : ''}. Hollow = under {SMALL_N} households. Click a row to filter.
         </div>
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -584,21 +648,18 @@ function AccessHeatmap({
   const cells = useMemo(() => accessShares(data, keepFor('age'), 'age_group', AGES), [data, keepFor]);
   const byKey = new Map(cells.map((c) => [`${c.group}|${c.method}`, c]));
   const peak = Math.max(0.01, ...cells.filter((c) => c.groupN >= SMALL_N).map((c) => c.share));
-  const shade = scaleLinear<string>().domain([0, peak]).range(['#f3f7fd', '#1f5fae']).clamp(true);
-  const LW = 110;
-  const CW = (W - LW) / AGES.length;
-  const RH = 34;
-  const H = ACCESS_METHODS.length * RH + 46;
+  const shade = scaleLinear<string>().domain([0, peak]).range(['#e6edf3', '#3a6a92']).clamp(true);
+  const HW = 600;
+  const LW = 86;
+  const CW = (HW - LW) / AGES.length;
+  const RH = 24;
+  const H = ACCESS_METHODS.length * RH + 34;
 
   return (
-    <section className="mb-10">
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">How: the main way banked households reach their account</h2>
-      <p className="text-sm text-gray-500 mb-2">
-        Each column adds to 100% of banked households in that age group. It follows the other filters. Click an age to filter to it.
-      </p>
-      <TipFrame>
+    <Panel title="How: main way banked households reach their account, by age">
+      <Tip className="flex-1">
         {(show, hide) => (
-          <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="group" aria-label="Main way of accessing an account, by age group" onPointerLeave={hide}>
+          <svg viewBox={`0 0 ${HW} ${H}`} width="100%" role="group" aria-label="Main way of accessing an account, by age group" onPointerLeave={hide}>
             {AGES.map((a, c) => {
               const picked = filters.age === a;
               return (
@@ -617,8 +678,8 @@ function AccessHeatmap({
                     }
                   }}
                 >
-                  <rect x={LW + c * CW + 2} y={2} width={CW - 4} height={24} rx={6} fill={picked ? '#0b0b0b' : '#f0efeb'} />
-                  <text x={LW + c * CW + CW / 2} y={14} dy="0.32em" textAnchor="middle" fontSize={12} fill={picked ? '#fff' : COLORS.ink}>
+                  <rect x={LW + c * CW + 2} y={2} width={CW - 4} height={22} rx={6} fill={picked ? ACCENT : CHIP} stroke={picked ? INK : 'none'} strokeWidth={2} />
+                  <text x={LW + c * CW + CW / 2} y={13} dy="0.32em" textAnchor="middle" fontSize={12} fontWeight={700} fill={INK}>
                     {a}
                   </text>
                 </g>
@@ -626,7 +687,7 @@ function AccessHeatmap({
             })}
             {ACCESS_METHODS.map((m, r) => (
               <g key={m}>
-                <text x={LW - 8} y={34 + r * RH + RH / 2} dy="0.32em" textAnchor="end" fontSize={12} fill={COLORS.ink}>
+                <text x={LW - 8} y={30 + r * RH + RH / 2} dy="0.32em" textAnchor="end" fontSize={12} fontWeight={600} fill={INK}>
                   {m}
                 </text>
                 {AGES.map((a, c) => {
@@ -646,15 +707,16 @@ function AccessHeatmap({
                         )
                       }
                     >
-                      <rect x={LW + c * CW + 1} y={34 + r * RH + 1} width={CW - 2} height={RH - 2} rx={4} fill={ok ? shade(v) : '#e4e3de'} />
+                      <rect x={LW + c * CW + 1} y={30 + r * RH + 1} width={CW - 2} height={RH - 2} rx={4} fill={ok ? shade(v) : '#e4e3de'} />
                       {ok && (
                         <text
                           x={LW + c * CW + CW / 2}
-                          y={34 + r * RH + RH / 2}
+                          y={30 + r * RH + RH / 2}
                           dy="0.32em"
                           textAnchor="middle"
                           fontSize={12}
-                          fill={v > peak * 0.55 ? '#fff' : COLORS.ink}
+                          fontWeight={600}
+                          fill={v > peak * 0.55 ? '#fff' : INK}
                           style={{ pointerEvents: 'none' }}
                         >
                           {(100 * v).toFixed(0)}%
@@ -667,7 +729,7 @@ function AccessHeatmap({
             ))}
           </svg>
         )}
-      </TipFrame>
-    </section>
+      </Tip>
+    </Panel>
   );
 }
