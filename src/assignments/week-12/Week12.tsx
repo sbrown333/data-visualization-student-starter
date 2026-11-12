@@ -9,7 +9,7 @@ import { scaleLinear } from 'd3-scale';
 // Data: BLS ATUS Activity Summary files, 2003 to 2025, weighted average minutes
 // per day (people who did none of an activity count as zero). Notes in README.md.
 
-const URL = `${import.meta.env.BASE_URL}data/atus/atus_time_use_2003_2025.csv`;
+const URL = `${import.meta.env.BASE_URL}data/atus_time_use_2003_2025.csv`;
 
 interface Row {
   year: number;
