@@ -74,13 +74,13 @@ export const assignments: Assignment[] = [
     name: 'Week 12',
     component: Week12,
   },
-];
-
-export const assignmentsMap = new Map(assignments.map((ex) => [ex.id, ex]));
-
-export const defaultAssignment = '1';
   {
     id: '13',
     name: 'Week 13',
     component: Week13,
   },
+];
+
+export const assignmentsMap = new Map(assignments.map((ex) => [ex.id, ex]));
+
+export const defaultAssignment = '1';
